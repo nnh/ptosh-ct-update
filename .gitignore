@@ -1,0 +1,17 @@
+/compare
+/input
+/log
+/output
+/save
+/TMF
+*.xlsx
+*.xsl
+*.xml
+*.csv
+*.dat
+*.png
+.DS_Store
+.RData
+.Rhistory
+.Rproj.user/
+*.Rproj
