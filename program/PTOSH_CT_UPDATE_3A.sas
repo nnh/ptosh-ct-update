@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_3A.sas
 Author : Ohtsuka Mariko
-Date : 2021-3-11
+Date : 2021-3-15
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -34,12 +34,12 @@ options mprint mlogic symbolgen noquotelenmax;
 %inc "&projectpath.\program\macro\PTOSH_CT_UPDATE_LIBNAME.sas";
 %EXEC_1A;
 * Main processing start;
-/*CODELIST Code+Codeで2020-12-18CTに存在して、2017-12-22CTに存在しないものの一覧抽出を依頼。1a.のCODELIST codeのものを除く
-抽出されたCODELISTとBridgehead上のCODELISTが同一のものの一覧を出力依頼
-*/
-* afterから2020で追加になったレコードを削除する->(1);
+proc import datafile="&extpath.\existents.csv"
+    out=existents
+    dbms=csv replace;
+    guessingrows=MAX;
+run;
 %MERGE_BEF_AFT(after, merge_before_after, merge_before_after_3a, Codelist_Code);
-* (1)とbeforeを比較して(1)にだけ存在するレコードを抽出する;
 proc sort data=before out=before_3a;
     by Codelist_Code Code;
 run;
@@ -48,4 +48,11 @@ proc sort data=merge_before_after_3a out=merge_before_after_3a_1;
 run;
 %MERGE_BEF_AFT(merge_before_after_3a_1, before_3a, merge_before_after_3a_2, %str(Codelist_Code Code));
 %EDIT_OUTPUT_COLS(merge_before_after_3a_2, ds_3a);
-%ds2csv (data=ds_3a, runmode=b, csvfile=&outputpath.\3a.csv, labels=Y);
+%ds2csv (data=ds_3a, runmode=b, csvfile=&outputpath.\3a_0.csv, labels=Y);
+proc sql noprint;
+    create table ds_3a_existents as
+    select a.*
+    from ds_3a a, existents b
+    where (a.Codelist_Code = b.VAR3) and (a.Code = b.VAR4);
+quit;
+%ds2csv (data=ds_3a_existents, runmode=b, csvfile=&outputpath.\3a.csv, labels=Y);

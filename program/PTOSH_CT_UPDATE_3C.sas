@@ -34,8 +34,6 @@ options mprint mlogic symbolgen noquotelenmax;
 %inc "&projectpath.\program\macro\PTOSH_CT_UPDATE_LIBNAME.sas";
 %EXEC_1A;
 * Main processing start;
-/*CODELIST Code+Code‚Å2017-12-22 CT‚É‘¶İ‚µ‚ÄA2020-12-18CT‚É‘¶İ‚µ‚È‚¢‚à‚Ì‚Ìˆê——’Šo‚ğˆË—ŠB
-*/
 %MERGE_BEF_AFT(before, after, merge_before_after_3c, %str(Codelist_Code Code));
 %EDIT_OUTPUT_COLS(merge_before_after_3c, ds_3c);
 %ds2csv (data=ds_3c, runmode=b, csvfile=&outputpath.\3c.csv, labels=Y);

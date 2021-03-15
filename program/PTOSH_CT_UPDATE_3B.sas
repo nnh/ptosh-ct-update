@@ -45,8 +45,6 @@ options mprint mlogic symbolgen noquotelenmax;
 %inc "&projectpath.\program\macro\PTOSH_CT_UPDATE_LIBNAME.sas";
 %EXEC_1A;
 * Main processing start;
-/*2020-12-18CT‚Æ2017-12-22CT‚É‚¨‚¢‚ÄCODELIST code + code‚ªˆê’v‚·‚é‚à‚Ì‚É‚¨‚¢‚ÄASubmission Value‚Ü‚½‚ÍNCI Preferred Term‚ª•ÏX‚³‚ê‚½‚à‚Ì‚Ìˆê——’Šo‚ğˆË—Š‚·‚é
-*/
 proc sql noprint;
     create table merge_before_after_3b as
     select a.Codelist_Name as a_Codelist_Name, a.CodelistId as a_CodelistId, 

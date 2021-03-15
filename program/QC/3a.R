@@ -18,5 +18,13 @@ exclude_add_codelist_code <- anti_join(sort_after_csv, add_codelist_code,  by="C
 distinct_2020_2017_codelist_code_code <- anti_join(exclude_add_codelist_code, sort_before_csv, by=c("Codelist_Code", "Code"))
 # output
 df_output <- distinct_2020_2017_codelist_code_code
+output_name <- "3a_0"
+source("./program/QC/output.R")
+# 抽出されたCODELISTとBridgehead上のCODELISTが同一のものの一覧
+existents <- read.csv("./input/ext/existents.csv", header=F, as.is=T, fileEncoding="UTF-8-BOM")
+existents <- existents %>% rename(Codelist_Code=V3, Code=V4)
+df_3a_existents <- inner_join(distinct_2020_2017_codelist_code_code, existents, by=c("Codelist_Code", "Code"))
+# output
+df_output <- df_3a_existents
 output_name <- "3a"
 source("./program/QC/output.R")
