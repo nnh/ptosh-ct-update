@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-5-11
+Date : 2020-5-12
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -80,13 +80,14 @@ SAS version : 9.4
         out=used
         dbms=csv replace;
         guessingrows=MAX;
+        getnames=no;
     run;
 %mend IMPORT_USED;
 %macro MATCH_USED(input_ds, output_ds);
     proc sql noprint;
         create table &output_ds. as
-        select a.*, b.Codelist_Id as used_Codelist_Id, b.Submission_Value as used_Submission_Value
-        from &input_ds. a left join used b on (a.CodelistId = b.Codelist_Id) and (a.CDISC_Submission_Value = b.NCI_Preferred_Term);
+        select a.*, b.var1 as used_Codelist_Id, b.var4 as used_Submission_Value
+        from &input_ds. a left join used b on (a.CodelistId = b.var1) and (a.CDISC_Submission_Value = b.var4);
     quit;
 %mend MATCH_USED;
 %macro EXEC_CODELIST_CHANGE();
