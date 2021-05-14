@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-5-12
+Date : 2020-5-14
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -86,7 +86,7 @@ SAS version : 9.4
 %macro MATCH_USED(input_ds, output_ds);
     proc sql noprint;
         create table &output_ds. as
-        select a.*, b.var1 as used_Codelist_Id, b.var4 as used_Submission_Value
+        select distinct a.*, b.var1 as used_Codelist_Id, b.var4 as used_Submission_Value
         from &input_ds. a left join used b on (a.CodelistId = b.var1) and (a.CDISC_Submission_Value = b.var4);
     quit;
 %mend MATCH_USED;
@@ -136,14 +136,19 @@ SAS version : 9.4
         create table temp_codelist_change as
         select * from change_bef_used
         outer union corr
-        select * from change_aft_used
-        order by Code, CDISC_Submission_Value, seq, Codelist_Code;
+        select * from change_aft_used;
     quit;
     %EDIT_OUTPUT_DS(temp_codelist_change, codelist_change);
 %mend EXEC_CODELIST_CHANGE;
 %macro EDIT_OUTPUT_DS(input_ds, output_ds);
+    proc sql noprint;
+        create table sort_&output_ds. as
+        select *
+        from &input_ds.
+        order by Code, CDISC_Submission_Value, seq, Codelist_Code;
+    quit;
     data &output_ds.;
-        set &input_ds.;
+        set sort_&output_ds.;
         if seq=1 then do;
           flag='change_before';
         end;
