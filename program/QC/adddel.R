@@ -11,7 +11,7 @@ get_change <- function(target_1, target_2){
   df_anti_join <- anti_join(target_1, target_2, by="Codelist_Code_code") %>% arrange(Codelist_Code, Code)
   return(df_anti_join)
 }
-
+# read files
 source("./program/QC/ptosh-ct-update.R")
 used <- read.csv(str_c(rawdata_path, "/used.csv"), header=F)
 # used.csvとマッチングしてCodelist_CodeとCodeを結合
@@ -30,7 +30,8 @@ df_before_join_only_code$seq <- 1
 df_after_join_only_code <- inner_join(df_after_anti_join, select(df_before_anti_join, Code), by="Code") %>% distinct()
 df_after_join_only_code$flag <- "change_after"
 df_after_join_only_code$seq <- 2
-df_change <- rbind(df_before_join_only_code, df_after_join_only_code) %>% arrange(Code, CDISC_Submission_Value, flag) %>% select(-c("seq"))
+df_after_join_only_code$temp_used <- df_before_join_only_code$temp_used
+df_change <- rbind(df_before_join_only_code, df_after_join_only_code) %>% arrange(Code, CDISC_Submission_Value, seq, Codelist_Code) %>% select(-c("seq"))
 df_change$used <- df_change$temp_used
 df_change <- df_change %>% select(-c("temp_used"))
 # ------ del
@@ -50,7 +51,7 @@ df_add_exclusion_change$flag <- "add"
 df_add_exclusion_change$used <- df_add_exclusion_change$temp_used
 df_add_exclusion_change <- df_add_exclusion_change %>% select(-c("temp_used"))
 # ------ SAS出力ファイル取り込み
-sas_change <- read.csv(str_c("./output/", "codelist_change.csv")) %>% arrange(Code, CDISC_Submission_Value, flag)
+sas_change <- read.csv(str_c("./output/", "codelist_change.csv")) %>% arrange(Code, CDISC_Submission_Value, desc(flag), Codelist_Code)
 sas_add <- read.csv(str_c("./output/", "code_add.csv")) %>% arrange(Codelist_Code, Code)
 sas_del <- read.csv(str_c("./output/", "code_del.csv")) %>% arrange(Codelist_Code, Code)
 # change 比較用CSV出力
@@ -62,3 +63,11 @@ select(df_del_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c(".
 # add 比較用CSV出力
 sas_add %>% write.csv(str_c("./output/", "sas_add.csv"))
 select(df_add_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_add.csv"))
+# used.csvにないもの
+sas_change %>% filter(used != 1)
+# usedを落としてCSV出力
+df_change %>% select(-c("used", "Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_change_check.csv"))
+sas_change %>% select(-c("used")) %>% write.csv(str_c("./output/", "sas_change_check.csv"))
+# addとDelを比較
+comp_sas_add_del <- inner_join(sas_add, sas_del, by=c("Codelist_Code", "Code"))
+
