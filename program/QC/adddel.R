@@ -41,7 +41,7 @@ df_del <- anti_join(before_csv, after_csv, by="Codelist_Code_code") %>% arrange(
 df_del_exclusion_change <- anti_join(df_del, df_before_join_only_code, by="Code") %>% arrange(Codelist_Code, Code)
 df_del_exclusion_change$flag <- "del"
 df_del_exclusion_change$used <- df_del_exclusion_change$temp_used
-df_del_exclusion_change <- df_del_exclusion_change %>% select(-c("temp_used"))
+df_del_exclusion_change <- df_del_exclusion_change %>% select(-c("temp_used")) %>% distinct()
 # ------ add
 # Codelist_code, Codeのセットがafterにあってbeforeにない→追加
 df_add <- anti_join(after_csv, before_csv, by="Codelist_Code_code") %>% arrange(Codelist_Code, Code)
