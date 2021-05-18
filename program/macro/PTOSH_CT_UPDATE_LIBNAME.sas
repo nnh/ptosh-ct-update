@@ -193,6 +193,38 @@ SAS version : 9.4
     quit;
     %EDIT_OUTPUT_DS(temp_add_del_4, &output_ds.);
 %mend EXEC_ADD_DEL;
+%macro EXEC_CODE_ONLY_CHANGE();
+    %MATCH_USED(wk_before, code_only_change_before);
+    proc sql noprint;
+        create table temp_code_only_change as
+        select a.Codelist_code, a.CodelistId as before_CodelistId, b.CodelistId as after_CodelistId, 
+               a.CDISC_Submission_Value, a.Code as before_Code, b.Code as after_Code,
+               a.Codelist_Code_Code as before_Codelist_Code_Code, b.Codelist_Code_Code as after_Codelist_Code_Code,
+               case
+                 when used_Submission_Value ^= '' then 1
+                 else .
+               end as used
+        from code_only_change_before a, wk_after b
+        where (a.Codelist_code = b.Codelist_code) and
+              (strip(a.CDISC_Submission_Value) = strip(b.CDISC_Submission_Value)) and
+              (a.Code ^= b.Code);
+    quit;
+    proc sql noprint;
+        create table temp_2_code_only_change as
+        select a.*, 5 as seq, b.used, 'change_code_only_before' as flag
+        from wk_before a, temp_code_only_change b
+        where a.Codelist_code_Code = b.before_Codelist_Code_Code
+        union
+        select a.*, 6 as seq, b.used, 'change_code_only_after' as flag
+        from wk_after a, temp_code_only_change b
+        where a.Codelist_code_Code = b.after_Codelist_Code_Code
+        order by Codelist_Code, Seq;
+    quit;
+    data code_only_change;
+        set temp_2_code_only_change;
+        drop seq Codelist_code_Code;
+    run;
+%mend EXEC_CODE_ONLY_CHANGE;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;
 %let outputpath=&projectpath.\output;
