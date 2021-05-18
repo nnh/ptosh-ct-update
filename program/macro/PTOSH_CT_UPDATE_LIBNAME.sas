@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-5-17
+Date : 2020-5-18
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -138,17 +138,17 @@ SAS version : 9.4
         outer union corr
         select * from change_aft_used;
     quit;
-    %EDIT_OUTPUT_DS(temp_codelist_change, codelist_change);
-%mend EXEC_CODELIST_CHANGE;
-%macro EDIT_OUTPUT_DS(input_ds, output_ds);
     proc sql noprint;
-        create table drop_&input_ds. as
+        create table temp_2_codelist_change as
         select distinct *
-        from &input_ds.
+        from temp_codelist_change
         order by Code, CDISC_Submission_Value, seq, Codelist_Code;
     quit;
+    %EDIT_OUTPUT_DS(temp_2_codelist_change, codelist_change);
+%mend EXEC_CODELIST_CHANGE;
+%macro EDIT_OUTPUT_DS(input_ds, output_ds);
     data &output_ds.;
-        set drop_&input_ds.;
+        set &input_ds.;
         if seq=1 then do;
           flag='change_before';
         end;
@@ -185,7 +185,13 @@ SAS version : 9.4
     quit;
     * set used flag;
     %MATCH_USED(temp_add_del_2, temp_add_del_3);
-    %EDIT_OUTPUT_DS(temp_add_del_3, &output_ds.);
+    proc sql noprint;
+        create table temp_add_del_4 as
+        select distinct *
+        from temp_add_del_3
+        order by Codelist_Code, Code;
+    quit;
+    %EDIT_OUTPUT_DS(temp_add_del_4, &output_ds.);
 %mend EXEC_ADD_DEL;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;

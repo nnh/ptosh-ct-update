@@ -52,22 +52,22 @@ df_add_exclusion_change$used <- df_add_exclusion_change$temp_used
 df_add_exclusion_change <- df_add_exclusion_change %>% select(-c("temp_used"))
 # ------ SAS出力ファイル取り込み
 sas_change <- read.csv(str_c("./output/", "codelist_change.csv")) %>% arrange(Code, CDISC_Submission_Value, desc(flag), Codelist_Code)
-sas_add <- read.csv(str_c("./output/", "code_add.csv")) %>% arrange(Codelist_Code, Code)
-sas_del <- read.csv(str_c("./output/", "code_del.csv")) %>% arrange(Codelist_Code, Code)
 # change 比較用CSV出力
-sas_change %>% write.csv(str_c("./output/", "sas_change.csv"))
-select(df_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_change.csv"))
+sas_change %>% write.csv(str_c("./output/QC/", "sas_change.csv"), row.names=F, na='""')
+select(df_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_change.csv"), row.names=F, na='""')
 # del 比較用CSV出力
-sas_del %>% write.csv(str_c("./output/", "sas_del.csv"))
-select(df_del_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_del.csv"))
+select(df_del_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_del.csv"), row.names=F, na='""')
 # add 比較用CSV出力
-sas_add %>% write.csv(str_c("./output/", "sas_add.csv"))
-select(df_add_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_add.csv"))
+select(df_add_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_add.csv"), row.names=F, na='""')
 # used.csvにないもの
 sas_change %>% filter(used != 1)
 # usedを落としてCSV出力
-df_change %>% select(-c("used", "Codelist_Code_code")) %>% write.csv(str_c("./output/", "r_change_check.csv"))
-sas_change %>% select(-c("used")) %>% write.csv(str_c("./output/", "sas_change_check.csv"))
-# addとDelを比較
-comp_sas_add_del <- inner_join(sas_add, sas_del, by=c("Codelist_Code", "Code"))
-
+df_change %>% select(-c("used", "Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_change_check.csv"))
+sas_change %>% select(-c("used")) %>% write.csv(str_c("./output/QC/", "sas_change_check.csv"))
+# Codeだけ違うデータ
+temp_code_only_change_1 <- inner_join(before_csv, after_csv, by=c("Codelist_Code", "CDISC_Submission_Value"))
+code_only_change <- temp_code_only_change_1 %>% filter(Code.x != Code.y) %>%
+  select(Codelist_Code, before_CodelistId=CodelistId.x, after_CodelistId=CodelistId.y, CDISC_Submission_Value,
+         before_Code=Code.x, after_Code=Code.y, before_used=temp_used.x, after_used=temp_used.y) %>%
+    arrange(Codelist_Code, before_Code, after_Code)
+code_only_change %>% write.csv(str_c("./output/QC/", "code_only_change.csv"), row.names=F, na='""')
