@@ -1,7 +1,5 @@
 /compare
-/input
 /log
-/output
 /save
 /TMF
 *.xlsx
@@ -10,6 +8,8 @@
 *.csv
 *.dat
 *.png
+*.txt
+*.xlsm
 .DS_Store
 .RData
 .Rhistory
