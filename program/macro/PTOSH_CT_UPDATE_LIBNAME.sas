@@ -189,13 +189,19 @@ SAS version : 9.4
         where Codelist_Code_Code not in (select Codelist_Code_Code from &target_2.);
     quit;
     proc sql noprint;
-        create table temp_add_del_2 as
+        create table temp_add_del_2_1 as
         select *
         from temp_add_del_1
         where Codelist_Code_Code not in (select Codelist_Code_Code from codelist_change);
     quit;
+    proc sql noprint;
+        create table temp_add_del_2_2 as
+        select *
+        from temp_add_del_2_1
+        where Codelist_Code_Code not in (select Codelist_Code_Code from code_only_change);
+    quit;
     * set used flag;
-    %MATCH_USED(temp_add_del_2, temp_add_del_3);
+    %MATCH_USED(temp_add_del_2_2, temp_add_del_3);
     proc sql noprint;
         create table &output_ds. as
         select distinct *
@@ -225,7 +231,7 @@ SAS version : 9.4
         select a.*, 6 as seq, b.used_Submission_Value, '' as used_Codelist_Id
         from wk_after a, temp_code_only_change b
         where a.Codelist_code_Code = b.after_Codelist_Code_Code
-        order by Codelist_Code, Seq;
+        order by Codelist_Code, CDISC_Submission_Value, Seq;
     quit;
 %mend EXEC_CODE_ONLY_CHANGE;
 %let inputpath=&projectpath.\input\rawdata;
