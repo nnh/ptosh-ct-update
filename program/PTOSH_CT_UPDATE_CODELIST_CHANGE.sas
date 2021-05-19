@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_CODELIST_CHANGE.sas
 Author : Ohtsuka Mariko
-Date : 2021-5-11
+Date : 2021-5-19
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -37,7 +37,13 @@ options mprint mlogic symbolgen noquotelenmax;
 %EXEC_CODE_ONLY_CHANGE;
 %EXEC_ADD_DEL(wk_before, wk_after, del, 3);
 %EXEC_ADD_DEL(wk_after, wk_before, add, 4);
-*%ds2csv (data=codelist_change, runmode=b, csvfile=&outputpath.\codelist_change.csv, labels=Y);
+
+%EDIT_OUTPUT_DS(codelist_change);
+%EDIT_OUTPUT_DS(code_only_change);
+%EDIT_OUTPUT_DS(del);
+%EDIT_OUTPUT_DS(add);
+
+%ds2csv (data=codelist_change, runmode=b, csvfile=&outputpath.\codelist_change.csv, labels=Y);
 %ds2csv (data=code_only_change, runmode=b, csvfile=&outputpath.\code_only_change.csv, labels=Y);
-*%ds2csv (data=add, runmode=b, csvfile=&outputpath.\code_add.csv, labels=Y);
-*%ds2csv (data=del, runmode=b, csvfile=&outputpath.\code_del.csv, labels=Y);
+%ds2csv (data=del, runmode=b, csvfile=&outputpath.\code_del.csv, labels=Y);
+%ds2csv (data=add, runmode=b, csvfile=&outputpath.\code_add.csv, labels=Y);

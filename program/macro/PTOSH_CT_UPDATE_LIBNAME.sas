@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-5-18
+Date : 2020-5-19
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -139,17 +139,22 @@ SAS version : 9.4
         select * from change_aft_used;
     quit;
     proc sql noprint;
-        create table temp_2_codelist_change as
+        create table codelist_change as
         select distinct *
         from temp_codelist_change
         order by Code, CDISC_Submission_Value, seq, Codelist_Code;
     quit;
-    %EDIT_OUTPUT_DS(temp_2_codelist_change, codelist_change);
 %mend EXEC_CODELIST_CHANGE;
-%macro EDIT_OUTPUT_DS(input_ds, output_ds);
-    data &output_ds.;
-        set &input_ds.;
-        if seq=1 then do;
+%macro EDIT_OUTPUT_DS(target_ds);
+    data temp_ds;
+        set &target_ds.;
+    run;
+    data &target_ds.;
+        set temp_ds;
+        if seq=0 then do;
+          flag='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';  * Dummy for length setting;
+        end;
+        else if seq=1 then do;
           flag='change_before';
         end;
         else if seq=2 then do;
@@ -160,6 +165,12 @@ SAS version : 9.4
         end;
         else if seq=4 then do;
           flag='add';
+        end;
+        else if seq=5 then do;
+          flag='change_code_only_before';
+        end;
+        else if seq=6 then do;
+          flag='change_code_only_after';
         end;
         if used_Submission_Value^='' then do;
           used=1;
@@ -181,17 +192,16 @@ SAS version : 9.4
         create table temp_add_del_2 as
         select *
         from temp_add_del_1
-        where Codelist_Code_Code not in (select Codelist_Code_Code from temp_codelist_change);
+        where Codelist_Code_Code not in (select Codelist_Code_Code from codelist_change);
     quit;
     * set used flag;
     %MATCH_USED(temp_add_del_2, temp_add_del_3);
     proc sql noprint;
-        create table temp_add_del_4 as
+        create table &output_ds. as
         select distinct *
         from temp_add_del_3
         order by Codelist_Code, Code;
     quit;
-    %EDIT_OUTPUT_DS(temp_add_del_4, &output_ds.);
 %mend EXEC_ADD_DEL;
 %macro EXEC_CODE_ONLY_CHANGE();
     %MATCH_USED(wk_before, code_only_change_before);
@@ -200,30 +210,23 @@ SAS version : 9.4
         select a.Codelist_code, a.CodelistId as before_CodelistId, b.CodelistId as after_CodelistId, 
                a.CDISC_Submission_Value, a.Code as before_Code, b.Code as after_Code,
                a.Codelist_Code_Code as before_Codelist_Code_Code, b.Codelist_Code_Code as after_Codelist_Code_Code,
-               case
-                 when used_Submission_Value ^= '' then 1
-                 else .
-               end as used
+               a.used_Submission_Value
         from code_only_change_before a, wk_after b
         where (a.Codelist_code = b.Codelist_code) and
               (strip(a.CDISC_Submission_Value) = strip(b.CDISC_Submission_Value)) and
               (a.Code ^= b.Code);
     quit;
     proc sql noprint;
-        create table temp_2_code_only_change as
-        select a.*, 5 as seq, b.used, 'change_code_only_before' as flag
+        create table code_only_change as
+        select a.*, 5 as seq, b.used_Submission_Value, '' as used_Codelist_Id
         from wk_before a, temp_code_only_change b
         where a.Codelist_code_Code = b.before_Codelist_Code_Code
         union
-        select a.*, 6 as seq, b.used, 'change_code_only_after' as flag
+        select a.*, 6 as seq, b.used_Submission_Value, '' as used_Codelist_Id
         from wk_after a, temp_code_only_change b
         where a.Codelist_code_Code = b.after_Codelist_Code_Code
         order by Codelist_Code, Seq;
     quit;
-    data code_only_change;
-        set temp_2_code_only_change;
-        drop seq Codelist_code_Code;
-    run;
 %mend EXEC_CODE_ONLY_CHANGE;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;

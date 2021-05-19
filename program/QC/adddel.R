@@ -66,10 +66,14 @@ df_change %>% select(-c("used", "Codelist_Code_code")) %>% write.csv(str_c("./ou
 sas_change %>% select(-c("used")) %>% write.csv(str_c("./output/QC/", "sas_change_check.csv"))
 # Codeだけ違うデータ
 temp_code_only_change_1 <- inner_join(before_csv, after_csv, by=c("Codelist_Code", "CDISC_Submission_Value"))
-temp_code_only_change_2 <- temp_code_only_change_1 %>% filter(Code.x != Code.y) %>% select(Codelist_Code, Code.x, Code.y, used=temp_used.x)
+temp_code_only_change_2 <- temp_code_only_change_1 %>% filter(Code.x != Code.y) %>% select(Codelist_Code, Code.x, Code.y, temp_used.x)
 code_only_change_before <- inner_join(before_csv, temp_code_only_change_2, by=c("Codelist_Code", "Code"="Code.x")) %>% select(-c("temp_used", "Code.y", "Codelist_Code_code"))
 code_only_change_before$flag <- "change_code_only_before"
+code_only_change_before$used <- code_only_change_before$temp_used.x
+code_only_change_before <- code_only_change_before %>% select(-c("temp_used.x"))
 code_only_change_after <- inner_join(after_csv, temp_code_only_change_2, by=c("Codelist_Code", "Code"="Code.y")) %>% select(-c("temp_used", "Code.x", "Codelist_Code_code"))
 code_only_change_after$flag <- "change_code_only_after"
+code_only_change_after$used <- code_only_change_before$used
+code_only_change_after <- code_only_change_after %>% select(-c("temp_used.x"))
 code_only_change <- rbind(code_only_change_before, code_only_change_after) %>% arrange(Codelist_Code, desc(flag), Code)
 code_only_change %>% write.csv(str_c("./output/QC/", "code_only_change.csv"), row.names=F, na='""')
