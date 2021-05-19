@@ -39,3 +39,5 @@ SDTM Terminology 2020-11-06.txtを上記プログラム実行用の入力ファ�
 * SDTM_CT_convert_for_before_file.sas  
 SDTM Terminology 2017-12-22.txtを上記プログラム実行用の入力ファイルに変換する  
 # 実行手順
+SASの場合は該当プログラムをSAS（日本語）で開きサブミットする。  
+Rの場合はptosh-ct-update/でCreate Projectして該当のプログラムを開きSourceかRunで実行する。  
