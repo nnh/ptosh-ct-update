@@ -1,11 +1,3 @@
-match_used <- function(input_df_name, used){
-  assign(str_c("save_", input_df_name), get(input_df_name), envir=.GlobalEnv)  # Save data frame
-  temp <- left_join(get(input_df_name), used, by=c("CodelistId"="V1", "CDISC_Submission_Value"="V4"))
-  temp$temp_used <- ifelse(!(is.na(temp$V2)), 1, ".")
-  temp$Codelist_Code_code <- str_c(temp$Codelist_Code, temp$Code)
-  temp <- temp %>% select(-c("V2", "V3", "V5"))
-  return(temp)
-}
 get_change <- function(target_1, target_2){
   # Codelist_CodeとCodeの少なくともどちらかが一致していない
   df_anti_join <- anti_join(target_1, target_2, by="Codelist_Code_code") %>% arrange(Codelist_Code, Code)
@@ -13,7 +5,6 @@ get_change <- function(target_1, target_2){
 }
 # read files
 source("./program/QC/ptosh-ct-update.R")
-used <- read.csv(str_c(rawdata_path, "/used.csv"), header=F)
 # used.csvとマッチングしてCodelist_CodeとCodeを結合
 after_csv <- match_used("after_csv", used)
 before_csv <- match_used("before_csv", used)
