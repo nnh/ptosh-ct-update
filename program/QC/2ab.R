@@ -8,5 +8,5 @@ match_code <- inner_join(before_csv, after_csv, by="Codelist_Code") %>% select(C
 unmatch_code <- anti_join(before_csv, match_code, by="Codelist_Code") %>% arrange(Codelist_Code, Code)
 unmatch_code$flag <- "2ab"
 unmatch_code$used <- unmatch_code$temp_used
-unmatch_code <- unmatch_code %>% select(-c("temp_used"))
+unmatch_code <- unmatch_code %>% select(-c(temp_used))
 write.csv(unmatch_code, str_c("./output/QC/", "2ab.csv"), row.names=F, na='""')

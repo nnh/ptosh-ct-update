@@ -175,6 +175,18 @@ SAS version : 9.4
         else if seq=7 then do;
           flag='2ab';
         end;
+        else if seq=8 then do;
+          flag='submission_value_change_before';
+        end;
+        else if seq=9 then do;
+          flag='submission_value_change_after';
+        end;
+        else if seq=10 then do;
+          flag='NCI_preferred_term_before';
+        end;
+        else if seq=11 then do;
+          flag='NCI_preferred_term_after';
+        end;
         if used_Submission_Value^='' then do;
           used=1;
         end;
@@ -237,6 +249,36 @@ SAS version : 9.4
         order by Codelist_Code, CDISC_Submission_Value, Seq;
     quit;
 %mend EXEC_CODE_ONLY_CHANGE;
+%macro EXEC_VALUE_ONLY_CHANGE(output_ds_name, target_var, seq);
+    %MATCH_USED(raw_before, before);
+    proc sql noprint;
+        create table after as
+        select a.*, b.used_Codelist_Id, b.used_Submission_Value
+        from raw_after a left join before b on ((a.Codelist_Code = b.Codelist_Code) and (a.Code = b.Code));
+    quit;
+    proc sql noprint;
+        create table ds_codelist_code_code as
+        select distinct a.Codelist_Code, a.Code
+        from before a, after b
+        where (a.Codelist_Code = b.Codelist_Code) and
+              (a.Code = b.Code) and
+              (strip(a.&target_var.) ^= strip(b.&target_var.));
+    quit;
+    proc sql noprint;
+        create table &output_ds_name. as
+        select distinct a.*, &seq. as seq, . as Codelist_Code_Code
+        from before a, ds_codelist_code_code b
+        where (a.Codelist_Code = b.Codelist_Code) and
+              (a.Code = b.Code)
+        outer union corr
+        select distinct a.*, %eval(&seq.+1) as seq, . as Codelist_Code_Code
+        from after a, ds_codelist_code_code b
+        where (a.Codelist_Code = b.Codelist_Code) and
+              (a.Code = b.Code)
+        order by Codelist_Code, Code, seq;
+    quit;
+    %EDIT_OUTPUT_DS( &output_ds_name.);
+%mend EXEC_VALUE_ONLY_CHANGE;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;
 %let outputpath=&projectpath.\output;
