@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_2AB.sas
 Author : Ohtsuka Mariko
-Date : 2021-6-1
+Date : 2021-6-2
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -36,10 +36,10 @@ options mprint mlogic symbolgen noquotelenmax;
 %MATCH_USED(raw_before, before);
 proc sql noprint;
     create table ds_2ab as
-    select *, . as Codelist_Code_Code, . as seq
+    select *, . as Codelist_Code_Code, 7 as seq
     from before
-    where Code not in (select Code from raw_after)
-    order by Code, Codelist_Code;
+    where Codelist_Code not in (select Codelist_Code from raw_after)
+    order by Codelist_Code, Code;
 quit;
 %EDIT_OUTPUT_DS(ds_2ab);
 %ds2csv (data=ds_2ab, runmode=b, csvfile=&outputpath.\2ab.csv, labels=Y);

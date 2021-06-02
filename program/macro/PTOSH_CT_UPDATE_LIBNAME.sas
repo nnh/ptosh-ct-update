@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-5-19
+Date : 2020-6-2
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -171,6 +171,9 @@ SAS version : 9.4
         end;
         else if seq=6 then do;
           flag='change_code_only_after';
+        end;
+        else if seq=7 then do;
+          flag='2ab';
         end;
         if used_Submission_Value^='' then do;
           used=1;
