@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : CREATE_USED_CSV.sas
 Author : Ohtsuka Mariko
-Date : 2021-6-24
+Date : 2021-6-25
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -47,6 +47,7 @@ proc import datafile=csv_2
 run;
 %macro EXTRACT_CT_FROM_TEMPLATE();
     %local template_col_count i temp default_value_col ct_col type field_type;
+    * The first line contains the original column names.;
     data template_header template;
         set raw_template;
         if _N_=1 then do;
@@ -56,6 +57,7 @@ run;
           output template;
         end;
     run;
+    * Get the original column names.;
     proc contents noprint
         data=raw_template
         out=template_cols;
@@ -82,15 +84,16 @@ run;
         %let field_type=var&i.;
       %end;
     %end;
+    * Extract the required columns.;
     proc sql noprint;
         create table temp_template_1 as
-        select &default_value_col. as terms_submission_value, &ct_col. as uuid, &type., &field_type.
+        select &default_value_col. as terms_submission_value, &ct_col. as uuid, &type. as type, &field_type. as field_type
         from template;
     quit;
     * Extract the CT used in the assignment field.;
     data temp_template_assignment_field;
         set temp_template_1;
-        if &type.='FieldItem::Assigned' and &field_type.='radio_button' and uuid^='' then output;
+        if type='FieldItem::Assigned' and field_type='radio_button' and uuid^='' then output;
     run;
     proc sort data=temp_template_assignment_field nodupkey;
         by terms_submission_value uuid; 
@@ -98,7 +101,7 @@ run;
     * Extract the CT used as options.;
     data temp_template_options;
         set temp_template_1;
-        if &type.='FieldItem::Article' and uuid^='' then output;
+        if type='FieldItem::Article' and uuid^='' then output;
     run;
     proc sort data=temp_template_options nodupkey;
         by uuid; 
@@ -128,8 +131,12 @@ run;
 proc sort data=ct_assignment_field;
     by uuid;
 run;
+data temp_template_options_2;
+    set temp_template_options;
+    keep uuid;
+run;
 data ct_options;
-    merge ct_assignment_field temp_template_options (in=a);
+    merge ct_assignment_field temp_template_options_2 (in=a);
     by uuid;
     if a=1 then used2_flg=1;
 run;
@@ -138,3 +145,7 @@ data used;
     set ct_options;
     if used1_flg=1 or used2_flg=1 then output;
 run;
+proc sort data=used;
+    by uuid terms_submission_value;
+run;
+%ds2csv (data=used, runmode=b, csvfile=&inputpath.\used.csv, labels=Y);
