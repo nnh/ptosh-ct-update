@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : CREATE_USED_CSV.sas
 Author : Ohtsuka Mariko
-Date : 2021-6-25
+Date : 2021-6-28
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -115,17 +115,29 @@ run;
         drop temp_var;
     run;
 %mend EDIT_VAR_LENGTH;
+%macro PREPARE_SET_USED1_FLG(input_ds, output_ds, seq);
+    data &output_ds.;
+        set &input_ds.;
+        check_terms_submission_value=lowcase(terms_submission_value);
+        terms_submission_value_&seq.=terms_submission_value;
+        drop terms_submission_value;
+    run;
+    proc sort data=&output_ds.;
+        by check_terms_submission_value uuid;
+    run;
+%mend PREPARE_SET_USED1_FLG;
 %EXTRACT_CT_FROM_TEMPLATE();
 %EDIT_VAR_LENGTH(controlled_terminologies, temp_controlled_terminologies, uuid, $200);
 %EDIT_VAR_LENGTH(temp_template_assignment_field, temp_template_assignment_field_2, uuid, $200);
+%PREPARE_SET_USED1_FLG(temp_controlled_terminologies, temp_controlled_terminologies_2, 1);
+%PREPARE_SET_USED1_FLG(temp_template_assignment_field_2, temp_template_assignment_field_3, 2);
 * Flag the CT used in the Assign field.;
-proc sort data=temp_controlled_terminologies;
-    by terms_submission_value uuid;
-run;
 data ct_assignment_field;
-    merge temp_controlled_terminologies temp_template_assignment_field_2 (in=a);
-    by terms_submission_value uuid;
+    merge temp_controlled_terminologies_2 temp_template_assignment_field_3 (in=a);
+    by check_terms_submission_value uuid;
     if a=1 then used1_flg=1; 
+    terms_submission_value=terms_submission_value_1;
+    drop terms_submission_value_1 terms_submission_value_2 check_terms_submission_value;
 run;
 * Flag the CT used as options.;
 proc sort data=ct_assignment_field;
@@ -141,11 +153,13 @@ data ct_options;
     if a=1 then used2_flg=1;
 run;
 * output used.csv;
-data used;
-    set ct_options;
-    if used1_flg=1 or used2_flg=1 then output;
-run;
-proc sort data=used;
-    by uuid terms_submission_value;
-run;
+proc sql noprint;
+    create table used as
+    select uuid, id, name, cdisc_name, cdisc_code, version, is_master, is_extensible, parity,
+           terms_id, terms_label, terms_submission_value, terms_code, terms_seq, terms_is_usable,
+           terms_is_master, type, field_type, used1_flg, used2_flg 
+    from ct_options
+    where (used1_flg=1 or used2_flg=1) and terms_submission_value ne ''
+    order by uuid, terms_submission_value;
+quit;
 %ds2csv (data=used, runmode=b, csvfile=&inputpath.\used.csv, labels=Y);
