@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : QC_CREATE_USED_CSV.sas
 Author : Ohtsuka Mariko
-Date : 2021-6-28
+Date : 2021-6-29
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -71,21 +71,28 @@ data ds_assignfield;
 run;
 proc sql noprint;
     create table option as
-    select distinct a.*, 1 as used2_flg
-    from ds_assignfield a right join template_option_1 b on (a.uuid = b.uuid);
+    select distinct a.*, 1 as temp_used2_flg
+    from ds_assignfield a, template_option_1 b
+    where a.uuid = b.uuid;
 quit;
 data check_option;
     set option;
-    drop used2_flg;
+    drop temp_used2_flg;
 run;
 proc sql noprint;
     create table not_option as
-    select distinct *, . as used2_flg
+    select distinct *, . as temp_used2_flg
     from ds_assignfield
     where uuid not in (select uuid from check_option); 
 quit;
 data ds_option;
     set option not_option;
+    if terms_is_usable='FALSE' then do;
+      used2_flg=.;
+    end;
+    else do;
+      used2_flg=temp_used2_flg;
+    end;
 run;
 data temp_used_1;
     set ds_option;
