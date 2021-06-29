@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-6-2
+Date : 2020-6-29
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -49,25 +49,26 @@ SAS version : 9.4
 %mend EXEC_1A;
 %macro EXEC_UNMATCHED();
     data wk_before;
-        set raw_before;
+        set before_used;
         Codelist_Code_Code=cats(Codelist_code, Code);
     run;
     data wk_after;
-        set raw_after;
+        set after_used;
         Codelist_Code_Code=cats(Codelist_code, Code);
     run;
     proc sql noprint;
+        * If Codelist_code, code matches, it is not checked.;
         create table match_codelist_code as
         select a.Codelist_Code_Code
         from wk_before a, wk_after b
         where a.Codelist_Code_Code = b.Codelist_Code_Code;
-    
+        * Codelist_code or code has changed : before;
         create table unmatch_codelist_or_code_before as
         select *
         from wk_before
         where Codelist_Code_Code not in (select Codelist_Code_Code from match_codelist_code)
         order by Codelist_Code_Code;    
-
+        * Codelist_code or code has changed : after;
         create table unmatch_codelist_or_code_after as
         select *
         from wk_after
@@ -80,18 +81,19 @@ SAS version : 9.4
         out=used
         dbms=csv replace;
         guessingrows=MAX;
-        getnames=no;
+        getnames=yes;
     run;
 %mend IMPORT_USED;
 %macro MATCH_USED(input_ds, output_ds);
     proc sql noprint;
         create table &output_ds. as
-        select a.*, b.var1 as used_Codelist_Id, b.var4 as used_Submission_Value
-        from &input_ds. a left join used b on (a.CodelistId = b.var1) and (a.CDISC_Submission_Value = b.var4);
+        select a.*, b.used1_flg, b.used2_flg
+        from &input_ds. a left join used b on (a.CodelistId = b.cdisc_name) and (a.CDISC_Submission_Value = b.terms_submission_value);
     quit;
 %mend MATCH_USED;
 %macro EXEC_CODELIST_CHANGE();
     %EXEC_UNMATCHED;
+    * Code is not changed, Codelist_code is changed;
     proc sql noprint;
         create table change_bef as
         select distinct a.*, 1 as seq
@@ -100,41 +102,28 @@ SAS version : 9.4
               (a.Code = b.Code)
         order by a.Code, a.Codelist_Code;
     quit;
-    * set used flag;
-    %MATCH_USED(change_bef, change_bef_used);
     proc sql noprint;
-        create table change_aft as
+        create table temp_change_aft as
         select distinct a.*, 2 as seq
         from Unmatch_codelist_or_code_after a, Unmatch_codelist_or_code_before b
         where (a.Codelist_Code ^= b.Codelist_Code) and
               (a.Code = b.Code)
         order by a.Code, a.Codelist_Code;
     quit;
-    * set used flag;
+    data change_aft;
+        set temp_change_aft;
+        drop used1_flg used2_flg;
+    run;
+    * Set the used_flg of "before" to "after";
     proc sql noprint;
-        create table change_bef_used_ari as
-        select *
-        from change_bef_used
-        where used_Submission_Value ^= '';
-
-        create table change_aft_used_ari as
-        select distinct a.*, '' as used_Codelist_Id, 'used_ari' as used_Submission_Value
-        from change_aft a, change_bef_used_ari b 
-        where a.Code = b.Code;
-
-        create table change_aft_used_nashi as
-        select distinct a.*, '' as used_Codelist_Id, '' as used_Submission_Value
-        from change_aft a
-        where a.Code not in (select Code from change_aft_used_ari);
-
         create table change_aft_used as
-        select * from change_aft_used_ari
-        outer union corr
-        select * from change_aft_used_nashi;
+        select a.*, b.used1_flg, b.used2_flg
+        from change_aft a left join (select code, used1_flg, used2_flg from change_bef) b on a.Code = b.Code;
     quit;
+    * Output "before" and "after" in vertical;
     proc sql noprint;
         create table temp_codelist_change as
-        select * from change_bef_used
+        select * from change_bef
         outer union corr
         select * from change_aft_used;
     quit;
@@ -187,13 +176,7 @@ SAS version : 9.4
         else if seq=11 then do;
           flag='NCI_preferred_term_after';
         end;
-        if used_Submission_Value^='' then do;
-          used=1;
-        end;
-        else do;
-          used=.;
-        end;
-        drop Codelist_Code_Code seq used_Codelist_Id used_Submission_Value;
+        drop Codelist_Code_Code seq;
     run;
 %mend EDIT_OUTPUT_DS;
 %macro EXEC_ADD_DEL(target_1, target_2, output_ds, seq);
@@ -204,19 +187,17 @@ SAS version : 9.4
         where Codelist_Code_Code not in (select Codelist_Code_Code from &target_2.);
     quit;
     proc sql noprint;
-        create table temp_add_del_2_1 as
+        create table temp_add_del_2 as
         select *
         from temp_add_del_1
         where Codelist_Code_Code not in (select Codelist_Code_Code from codelist_change);
     quit;
     proc sql noprint;
-        create table temp_add_del_2_2 as
+        create table temp_add_del_3 as
         select *
-        from temp_add_del_2_1
+        from temp_add_del_2
         where Codelist_Code_Code not in (select Codelist_Code_Code from code_only_change);
     quit;
-    * set used flag;
-    %MATCH_USED(temp_add_del_2_2, temp_add_del_3);
     proc sql noprint;
         create table &output_ds. as
         select distinct *
@@ -225,26 +206,33 @@ SAS version : 9.4
     quit;
 %mend EXEC_ADD_DEL;
 %macro EXEC_CODE_ONLY_CHANGE();
-    %MATCH_USED(wk_before, code_only_change_before);
     proc sql noprint;
         create table temp_code_only_change as
         select a.Codelist_code, a.CodelistId as before_CodelistId, b.CodelistId as after_CodelistId, 
                a.CDISC_Submission_Value, a.Code as before_Code, b.Code as after_Code,
                a.Codelist_Code_Code as before_Codelist_Code_Code, b.Codelist_Code_Code as after_Codelist_Code_Code,
-               a.used_Submission_Value
-        from code_only_change_before a, wk_after b
+               a.used1_flg, a.used2_flg
+        from wk_before a, wk_after b
         where (a.Codelist_code = b.Codelist_code) and
               (strip(a.CDISC_Submission_Value) = strip(b.CDISC_Submission_Value)) and
               (a.Code ^= b.Code);
     quit;
+    data wk_before_1;
+        set wk_before;
+        drop used1_flg used2_flg;
+    run;
+    data wk_after_1;
+        set wk_after;
+        drop used1_flg used2_flg;
+    run;
     proc sql noprint;
         create table code_only_change as
-        select a.*, 5 as seq, b.used_Submission_Value, '' as used_Codelist_Id
-        from wk_before a, temp_code_only_change b
+        select a.*, 5 as seq, b.used1_flg, b.used2_flg
+        from wk_before_1 a, temp_code_only_change b
         where a.Codelist_code_Code = b.before_Codelist_Code_Code
         union
-        select a.*, 6 as seq, b.used_Submission_Value, '' as used_Codelist_Id
-        from wk_after a, temp_code_only_change b
+        select a.*, 6 as seq, b.used1_flg, b.used2_flg
+        from wk_after_1 a, temp_code_only_change b
         where a.Codelist_code_Code = b.after_Codelist_Code_Code
         order by Codelist_Code, CDISC_Submission_Value, Seq;
     quit;
@@ -286,3 +274,5 @@ SAS version : 9.4
 %let after_file_name=SDTM Terminology 2020-11-06.csv;
 %IMPORT_BEF_AFT;
 %IMPORT_USED;
+%MATCH_USED(raw_before, before_used);
+%MATCH_USED(raw_after, after_used);

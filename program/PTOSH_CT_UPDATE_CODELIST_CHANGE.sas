@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_CODELIST_CHANGE.sas
 Author : Ohtsuka Mariko
-Date : 2021-5-19
+Date : 2021-6-29
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
