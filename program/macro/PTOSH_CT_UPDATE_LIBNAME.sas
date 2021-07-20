@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-6-29
+Date : 2020-7-20
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -91,6 +91,25 @@ SAS version : 9.4
         from &input_ds. a left join used b on (a.CodelistId = b.cdisc_name) and (a.CDISC_Submission_Value = b.terms_submission_value);
     quit;
 %mend MATCH_USED;
+%macro GET_UNMATCH_USED(input_ds, output_ds);
+    proc sql noprint;
+        create table temp_used as
+        select *, cats(cdisc_name, terms_submission_value) as key
+        from used;
+    quit;
+    proc sql noprint;
+        create table temp_add_used as
+        select a.*
+        from temp_used a inner join &input_ds. b on (a.cdisc_name = b.CodelistId) and (a.terms_submission_value = b.CDISC_Submission_Value);
+    quit;
+    proc sql noprint;
+        create table &output_ds. as
+        select cdisc_name as CodelistId, cdisc_code as Codelist_Code, name as Codelist_Name,
+               terms_code as Code, terms_submission_value as CDISC_Submission_Value, 12 as seq
+        from (select * from temp_used where is_master = 'FALSE')
+        where key not in (select key from temp_add_used);
+    quit;
+%mend GET_UNMATCH_USED;
 %macro EXEC_CODELIST_CHANGE();
     %EXEC_UNMATCHED;
     * Code is not changed, Codelist_code is changed;
@@ -176,6 +195,9 @@ SAS version : 9.4
         else if seq=11 then do;
           flag='NCI_preferred_term_after';
         end;
+        else if seq=12 then do;
+          flag='unmatch';
+        end;
         drop Codelist_Code_Code seq;
     run;
 %mend EDIT_OUTPUT_DS;
@@ -199,11 +221,20 @@ SAS version : 9.4
         where Codelist_Code_Code not in (select Codelist_Code_Code from code_only_change);
     quit;
     proc sql noprint;
-        create table &output_ds. as
+        create table temp_add_del_4 as 
         select distinct *
         from temp_add_del_3
         order by Codelist_Code, Code;
     quit;
+    %GET_UNMATCH_USED(temp_add_del_4, unmatch_used);
+    data &output_ds.;
+        length CodelistId $200. Codelist_Code $200. Codelist_Name $200. Datatype $200. SASFormatName $200. 
+               Code $200. Ordernum $200. Rank $200. Codelist_Extensible__Yes_No_ $200. CDISC_Submission_Value $200.
+               Translated $2000. lang $200. CTDef $2000. CTListDef $2000. NCI_Preferred_Term $200. used1_flg $200. 
+                used2_flg $200. Codelist_Code_Code $200. seq 8.; 
+        set temp_add_del_4 unmatch_used;
+        format _ALL_;
+    run;
 %mend EXEC_ADD_DEL;
 %macro EXEC_CODE_ONLY_CHANGE();
     proc sql noprint;
