@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-7-20
+Date : 2020-7-21
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -107,7 +107,8 @@ SAS version : 9.4
         select cdisc_name as CodelistId, cdisc_code as Codelist_Code, name as Codelist_Name,
                terms_code as Code, terms_submission_value as CDISC_Submission_Value, 12 as seq
         from (select * from temp_used where is_master = 'FALSE')
-        where key not in (select key from temp_add_used);
+        where key not in (select key from temp_add_used)
+        order by cdisc_name, input(terms_seq, best12.), name, terms_submission_value;
     quit;
 %mend GET_UNMATCH_USED;
 %macro EXEC_CODELIST_CHANGE();

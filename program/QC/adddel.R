@@ -70,15 +70,23 @@ df_change %>% select(-c("used1_flg", "used2_flg", "Codelist_Code_code")) %>% wri
 sas_change %>% select(-c("used1_flg", "used2_flg")) %>% write.csv(str_c("./output/QC/", "sas_change_check.csv"))
 # used:is_master=F
 not_is_master_used <- used %>% filter(is_master == "FALSE")
+# add unmatch
 unmatch_df_add <- df_add
 unmatch_df_add$key <- str_c(unmatch_df_add$CodelistId, unmatch_df_add$CDISC_Submission_Value)
 unmatch_used <- not_is_master_used
 unmatch_used$key <- str_c(unmatch_used$cdisc_name, unmatch_used$terms_submission_value)
-unmatch_add <- unmatch_used %>% anti_join(unmatch_df_add, by="key") %>% arrange(cdisc_name, name, terms_submission_value) %>%
+unmatch_add <- unmatch_used %>% anti_join(unmatch_df_add, by="key") %>% arrange(cdisc_name, as.numeric(terms_seq), name, terms_submission_value) %>%
   select(c("cdisc_name", "cdisc_code", "name", "terms_code", "terms_submission_value")) %>% distinct()
-#select cdisc_name as CodelistId, cdisc_code as Codelist_Code, name as Codelist_Name,terms_code as Code,
-#terms_submission_value as CDISC_Submission_Value, 12 as seq
-unmatch_add_sas <- read.csv("./output/code_add.csv", na='') %>% filter(flag=="unmatch") %>% arrange(CodelistId, Codelist_Name, CDISC_Submission_Value) %>%
+unmatch_add_sas <- read.csv("./output/code_add.csv", na='') %>% filter(flag=="unmatch") %>%
   select(c("CodelistId", "Codelist_Code", "Codelist_Name", "Code", "CDISC_Submission_Value"))
 unmatch_add %>% write.csv(str_c("./output/QC/", "unmatch_add_r.csv"), row.names=F, na='""')
 unmatch_add_sas %>% write.csv(str_c("./output/QC/", "unmatch_add_sas.csv"), row.names=F, na='""')
+# del unmatch
+unmatch_df_del <- df_del
+unmatch_df_del$key <- str_c(unmatch_df_del$CodelistId, unmatch_df_del$CDISC_Submission_Value)
+unmatch_del <- unmatch_used %>% anti_join(unmatch_df_del, by="key") %>% arrange(cdisc_name, as.numeric(terms_seq), name, terms_submission_value) %>%
+  select(c("cdisc_name", "cdisc_code", "name", "terms_code", "terms_submission_value")) %>% distinct()
+unmatch_del_sas <- read.csv("./output/code_del.csv", na='') %>% filter(flag=="unmatch") %>%
+  select(c("CodelistId", "Codelist_Code", "Codelist_Name", "Code", "CDISC_Submission_Value"))
+unmatch_del %>% write.csv(str_c("./output/QC/", "unmatch_del_r.csv"), row.names=F, na='""')
+unmatch_del_sas %>% write.csv(str_c("./output/QC/", "unmatch_del_sas.csv"), row.names=F, na='""')
