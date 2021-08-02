@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_CODELIST_CHANGE.sas
 Author : Ohtsuka Mariko
-Date : 2021-6-29
+Date : 2021-8-2
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -42,6 +42,36 @@ options mprint mlogic symbolgen noquotelenmax;
 %EDIT_OUTPUT_DS(code_only_change);
 %EDIT_OUTPUT_DS(del);
 %EDIT_OUTPUT_DS(add);
+
+%GET_USED1_USED2(codelist_change);
+%GET_USED1_USED2(del);
+%macro GET_ADD_UNMATCH_COUNT(flag_str);
+    proc sql noprint;
+        create table temp_add_&flag_str. as
+        select CodelistId, count(*) as &flag_str._count
+        from add
+        where flag = "&flag_str."
+        group by CodelistId;
+    quit;
+%mend GET_ADD_UNMATCH_COUNT;
+* add;
+%GET_ADD_UNMATCH_COUNT(unmatch);
+%GET_ADD_UNMATCH_COUNT(add);
+proc sql noprint;
+    create table add_add_unmatch as
+    select a.*, b.unmatch_count
+    from temp_add_add a inner join temp_add_unmatch b on a.CodelistId = b.CodelistId;
+quit;
+data temp_add;
+    set add;
+run;
+proc sql noprint;
+    create table add as
+    select *
+    from temp_add
+    where CodelistId in (select CodelistId from add_add_unmatch)
+    order by CodelistId;
+quit;
 
 %ds2csv (data=codelist_change, runmode=b, csvfile=&outputpath.\codelist_change.csv, labels=Y);
 %ds2csv (data=code_only_change, runmode=b, csvfile=&outputpath.\code_only_change.csv, labels=Y);

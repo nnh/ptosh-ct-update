@@ -71,15 +71,22 @@ sas_change %>% select(-c("used1_flg", "used2_flg")) %>% write.csv(str_c("./outpu
 # used:is_master=F
 not_is_master_used <- used %>% filter(is_master == "FALSE")
 # add unmatch
-unmatch_df_add <- df_add
+unmatch_df_add <- df_add_exclusion_change
 unmatch_df_add$key <- str_c(unmatch_df_add$CodelistId, unmatch_df_add$CDISC_Submission_Value)
 unmatch_used <- not_is_master_used
 unmatch_used$key <- str_c(unmatch_used$cdisc_name, unmatch_used$terms_submission_value)
 unmatch_add <- unmatch_used %>% anti_join(unmatch_df_add, by="key") %>% arrange(cdisc_name, as.numeric(terms_seq), name, terms_submission_value) %>%
   select(c("cdisc_name", "cdisc_code", "name", "terms_code", "terms_submission_value")) %>% distinct()
-unmatch_add_sas <- read.csv("./output/code_add.csv", na='') %>% filter(flag=="unmatch") %>%
-  select(c("CodelistId", "Codelist_Code", "Codelist_Name", "Code", "CDISC_Submission_Value"))
-unmatch_add %>% write.csv(str_c("./output/QC/", "unmatch_add_r.csv"), row.names=F, na='""')
+add_list <- df_add_exclusion_change %>% select("CodelistId") %>% distinct()
+unmatch_list <- unmatch_add %>% select("cdisc_name") %>% distinct()
+inner_join_add_unmatch <- inner_join(add_list, unmatch_list, by=c("CodelistId"="cdisc_name"))
+inner_join_add_unmatch_add <- inner_join(inner_join_add_unmatch, df_add_exclusion_change)
+inner_join_add_unmatch_unmatch <- inner_join(inner_join_add_unmatch, unmatch_add, by=c("CodelistId"="cdisc_name"))
+colnames(inner_join_add_unmatch_unmatch) <- c("CodelistId", "Codelist_Code", "Codelist_Name", "Code", "CDISC_Submission_Value")
+inner_join_add_unmatch_unmatch$flag <- "unmatch"
+rbind_inner_join_add_unmatch <- bind_rows(inner_join_add_unmatch_add, inner_join_add_unmatch_unmatch) %>% arrange("Codelist_Code") %>% select(-c("Codelist_Code_code"))
+unmatch_add_sas <- read.csv("./output/code_add.csv", na='') %>% arrange("Codelist_Code")
+rbind_inner_join_add_unmatch %>% write.csv(str_c("./output/QC/", "unmatch_add_r.csv"), row.names=F, na='""')
 unmatch_add_sas %>% write.csv(str_c("./output/QC/", "unmatch_add_sas.csv"), row.names=F, na='""')
 # del unmatch
 unmatch_df_del <- df_del

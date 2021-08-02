@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-7-21
+Date : 2020-8-2
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -299,6 +299,15 @@ SAS version : 9.4
     quit;
     %EDIT_OUTPUT_DS( &output_ds_name.);
 %mend EXEC_VALUE_ONLY_CHANGE;
+%macro GET_USED1_USED2(target_ds);
+    data temp_ds;
+        set &target_ds.;
+    run;
+    data &target_ds.;
+        set temp_ds;
+        where (used1_flg is not missing) or (used2_flg is not missing); 
+    run;
+%mend GET_USED1_USED2;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;
 %let outputpath=&projectpath.\output;
