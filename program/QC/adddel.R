@@ -55,10 +55,10 @@ df_add_exclusion_code_change <- anti_join(df_add, code_only_change_after, by=c("
 df_add_exclusion_change <- anti_join(df_add_exclusion_code_change, df_after_join_only_code, by="Code") %>% arrange(Codelist_Code, Code) %>% distinct()
 df_add_exclusion_change$flag <- "add"
 # ------ SAS出力ファイル取り込み
-sas_change <- read.csv(str_c("./output/", "codelist_change.csv")) %>% arrange(Code, CDISC_Submission_Value, desc(flag), Codelist_Code)
+sas_change <- read_csv(str_c("./output/", "codelist_change.csv"), col_types = cols(.default = "c")) %>% arrange(Code, CDISC_Submission_Value, desc(flag), Codelist_Code)
 # change 比較用CSV出力
 sas_change %>% write.csv(str_c("./output/QC/", "sas_change.csv"), row.names=F, na='""')
-select(df_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_change.csv"), row.names=F, na='""')
+select(df_change, -c("Codelist_Code_code")) %>% filter(used1_flg == 1 | used2_flg == 1)  %>% arrange(Code, CDISC_Submission_Value, desc(flag), Codelist_Code) %>% write.csv(str_c("./output/QC/", "r_change.csv"), row.names=F, na='""')
 # del 比較用CSV出力
 select(df_del_exclusion_change, -c("Codelist_Code_code")) %>% write.csv(str_c("./output/QC/", "r_del.csv"), row.names=F, na='""')
 # add 比較用CSV出力
@@ -93,6 +93,7 @@ unmatch_df_del <- df_del
 unmatch_df_del$key <- str_c(unmatch_df_del$CodelistId, unmatch_df_del$CDISC_Submission_Value)
 unmatch_del <- unmatch_used %>% anti_join(unmatch_df_del, by="key") %>% arrange(cdisc_name, as.numeric(terms_seq), name, terms_submission_value) %>%
   select(c("cdisc_name", "cdisc_code", "name", "terms_code", "terms_submission_value")) %>% distinct()
+output_df_del <- df_del_exclusion_change %>% filter(used1_flg == 1 | used2_flg == 1)
 unmatch_del_sas <- read.csv("./output/code_del.csv", na='') %>% filter(flag=="unmatch") %>%
   select(c("CodelistId", "Codelist_Code", "Codelist_Name", "Code", "CDISC_Submission_Value"))
 unmatch_del %>% write.csv(str_c("./output/QC/", "unmatch_del_r.csv"), row.names=F, na='""')

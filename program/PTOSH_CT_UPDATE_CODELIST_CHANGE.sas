@@ -70,7 +70,7 @@ proc sql noprint;
     select *
     from temp_add
     where CodelistId in (select CodelistId from add_add_unmatch)
-    order by CodelistId;
+    order by CodelistId, Code, CDISC_Submission_Value;
 quit;
 
 %ds2csv (data=codelist_change, runmode=b, csvfile=&outputpath.\codelist_change.csv, labels=Y);
