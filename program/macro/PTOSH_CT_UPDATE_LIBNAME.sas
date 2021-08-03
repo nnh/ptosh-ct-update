@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-8-2
+Date : 2020-8-3
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -273,7 +273,7 @@ SAS version : 9.4
     %MATCH_USED(raw_before, before);
     proc sql noprint;
         create table after as
-        select a.*, b.used_Codelist_Id, b.used_Submission_Value
+        select a.*, b.used1_flg, b.used2_flg
         from raw_after a left join before b on ((a.Codelist_Code = b.Codelist_Code) and (a.Code = b.Code));
     quit;
     proc sql noprint;
