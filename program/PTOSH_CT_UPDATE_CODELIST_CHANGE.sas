@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_CODELIST_CHANGE.sas
 Author : Ohtsuka Mariko
-Date : 2021-8-2
+Date : 2021-8-3
 SAS version : 9.4
 **************************************************************************;
 proc datasets library=work kill nolist; quit;
@@ -70,7 +70,7 @@ proc sql noprint;
     select *
     from temp_add
     where CodelistId in (select CodelistId from add_add_unmatch)
-    order by CodelistId, Code, CDISC_Submission_Value;
+    order by CodelistId, flag, Code, CDISC_Submission_Value;
 quit;
 
 %ds2csv (data=codelist_change, runmode=b, csvfile=&outputpath.\codelist_change.csv, labels=Y);
