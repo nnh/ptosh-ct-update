@@ -42,3 +42,6 @@ JSON形式ファイルをCSVファイルに変換する
 # 実行手順
 SASの場合は該当プログラムをSAS（日本語）で開きサブミットする。  
 Rの場合はptosh-ct-update/でCreate Projectして該当のプログラムを開きSourceかRunで実行する。  
+# License
+ptosh-ct-update are licensed under the MIT license.   
+Copyright © 2021, NHO Nagoya Medical Center and NPO-OSCR.  
