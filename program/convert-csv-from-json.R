@@ -1,6 +1,7 @@
 # Converting a JSON file to a CSV file
 # Mariko Ohtsuka
 # Create 2021/06/23
+# fix 2021/8/26
 # ------ libraries ------
 library(tidyverse)
 library(jsonlite)
@@ -44,6 +45,6 @@ output_path <- rawdata_path
 file_list <- list.files(rawdata_path, pattern="json$", full.names=T)
 map(file_list, EditDataFrameFromJson)
 output_template <- CreateDataFrameForOutput(template, "field_items") %>%
-  write.csv(str_c(output_path, "/template.csv"), row.names=F, na="")
+  write.csv(str_c(output_path, "/template.csv"), row.names=F, na="", fileEncoding="UTF-8")
 output_controlled_terminologies <- CreateDataFrameForOutput(controlled_terminologies, "terms") %>%
-  write.csv(str_c(output_path, "/controlled_terminologies.csv"), row.names=F, na="")
+  write.csv(str_c(output_path, "/controlled_terminologies.csv"), row.names=F, na="", fileEncoding="UTF-8")
