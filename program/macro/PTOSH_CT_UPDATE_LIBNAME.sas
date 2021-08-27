@@ -1,7 +1,7 @@
 **************************************************************************
 Program Name : PTOSH_CT_UPDATE_LIBNAME.sas
 Author : Ohtsuka Mariko
-Date : 2020-8-3
+Date : 2020-8-27
 SAS version : 9.4
 **************************************************************************;
 %macro IMPORT_BEF_AFT();
@@ -106,7 +106,7 @@ SAS version : 9.4
         create table &output_ds. as
         select cdisc_name as CodelistId, cdisc_code as Codelist_Code, name as Codelist_Name,
                terms_code as Code, terms_submission_value as CDISC_Submission_Value, 12 as seq
-        from (select * from temp_used where is_master = 'FALSE')
+        from (select * from temp_used where terms_is_master = 'FALSE')
         where key not in (select key from temp_add_used)
         order by cdisc_name, input(terms_seq, best12.), name, terms_submission_value;
     quit;
@@ -308,6 +308,15 @@ SAS version : 9.4
         where (used1_flg is not missing) or (used2_flg is not missing); 
     run;
 %mend GET_USED1_USED2;
+%macro GET_ADD_UNMATCH_COUNT(flag_str);
+    proc sql noprint;
+        create table temp_add_&flag_str. as
+        select CodelistId, count(*) as &flag_str._count
+        from add
+        where flag = "&flag_str."
+        group by CodelistId;
+    quit;
+%mend GET_ADD_UNMATCH_COUNT;
 %let inputpath=&projectpath.\input\rawdata;
 %let extpath=&projectpath.\input\ext;
 %let outputpath=&projectpath.\output;
